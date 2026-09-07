@@ -144,65 +144,67 @@ class _CalculatorTabState extends State<CalculatorTab> {
 
   Future<void> _exportPdf() async {
     if (_history.isEmpty) return;
-    final font = await PdfGoogleFonts.vazirmatnRegular();
-    final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(base: font, bold: font),
-    );
+    try {
+      final font = await PdfGoogleFonts.vazirmatnRegular();
+      final pdf = pw.Document(
+        theme: pw.ThemeData.withFont(base: font, bold: font),
+      );
 
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
-        build: (pw.Context context) {
-          return pw.Directionality(
-            textDirection: pw.TextDirection.rtl,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.blueGrey800,
-                    borderRadius: pw.BorderRadius.circular(8),
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (pw.Context context) {
+            return pw.Directionality(
+              textDirection: pw.TextDirection.rtl,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.blueGrey800,
+                      borderRadius: pw.BorderRadius.circular(8),
+                    ),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(
+                          'گزارش تاریخچه ماشین حساب',
+                          style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.Text(
+                          DateTime.now().toString().split(' ')[0],
+                          style: const pw.TextStyle(color: PdfColors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'گزارش تاریخچه ماشین حساب',
-                        style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold),
-                      ),
-                      pw.Text(
-                        DateTime.now().toString().split(' ')[0],
-                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 12),
-                      ),
-                    ],
+                  pw.SizedBox(height: 20),
+                  pw.Table.fromTextArray(
+                    border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                    headers: ['ردیف', 'محاسبه و نتیجه'],
+                    data: List.generate(
+                      _history.length,
+                      (index) => ['${index + 1}', _history[index]],
+                    ),
+                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                    headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
+                    cellAlignment: pw.Alignment.centerRight,
+                    cellPadding: const pw.EdgeInsets.all(8),
                   ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.TableHelper.fromTextArray(
-                  border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                  headers: ['ردیف', 'محاسبه و نتیجه'],
-                  data: List.generate(
-                    _history.length,
-                    (index) => ['${index + 1}', _history[index]],
-                  ),
-                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
-                  cellAlignment: pw.Alignment.centerRight,
-                  cellPadding: const pw.EdgeInsets.all(8),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+                ],
+              ),
+            );
+          },
+        ),
+      );
 
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'calculator_history.pdf',
-    );
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'calculator_history.pdf',
+      );
+    } catch (_) {}
   }
 
   void _showHistoryModal() {
@@ -234,7 +236,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
                         tooltip: 'اشتراک‌گذاری متنی',
                         onPressed: () {
                           if (_history.isNotEmpty) {
-                            Share.share('📊 تاریخچه محاسبات:\n\n' + _history.join('\n'));
+                            Share.share('📊 تاریخچه محاسبات:\n\n${_history.join('\n')}');
                           }
                         },
                       ),
