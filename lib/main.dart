@@ -127,7 +127,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
       Parser p = Parser();
       Expression exp = p.parse(parsed);
       ContextModel cm = ContextModel();
-      double eval = exp.evaluate(EvaluationType.REAL, cm);
+      double eval = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
 
       String formattedResult = eval.toStringAsFixed(eval.truncateToDouble() == eval ? 0 : 4);
       setState(() {
@@ -145,56 +145,50 @@ class _CalculatorTabState extends State<CalculatorTab> {
   Future<void> _exportPdf() async {
     if (_history.isEmpty) return;
     try {
-      final font = await PdfGoogleFonts.vazirmatnRegular();
-      final pdf = pw.Document(
-        theme: pw.ThemeData.withFont(base: font, bold: font),
-      );
+      final pdf = pw.Document();
 
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
           build: (pw.Context context) {
-            return pw.Directionality(
-              textDirection: pw.TextDirection.rtl,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(12),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.blueGrey800,
-                      borderRadius: pw.BorderRadius.circular(8),
-                    ),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text(
-                          'گزارش تاریخچه ماشین حساب',
-                          style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold),
-                        ),
-                        pw.Text(
-                          DateTime.now().toString().split(' ')[0],
-                          style: const pw.TextStyle(color: PdfColors.white, fontSize: 12),
-                        ),
-                      ],
-                    ),
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blueGrey800,
+                    borderRadius: pw.BorderRadius.circular(8),
                   ),
-                  pw.SizedBox(height: 20),
-                  pw.Table.fromTextArray(
-                    border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                    headers: ['ردیف', 'محاسبه و نتیجه'],
-                    data: List.generate(
-                      _history.length,
-                      (index) => ['${index + 1}', _history[index]],
-                    ),
-                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                    headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
-                    cellAlignment: pw.Alignment.centerRight,
-                    cellPadding: const pw.EdgeInsets.all(8),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'Calculator History Report',
+                        style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.Text(
+                        DateTime.now().toString().split(' ')[0],
+                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 12),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Table.fromTextArray(
+                  border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                  headers: ['No', 'Calculation & Result'],
+                  data: List.generate(
+                    _history.length,
+                    (index) => ['${index + 1}', _history[index]],
+                  ),
+                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
+                  cellAlignment: pw.Alignment.centerLeft,
+                  cellPadding: const pw.EdgeInsets.all(8),
+                ),
+              ],
             );
           },
         ),
@@ -314,7 +308,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
             alignment: Alignment.bottomRight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAlignment.end,
               children: [
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -396,10 +390,11 @@ class _GraphTabState extends State<GraphTab> {
       Parser p = Parser();
       Expression exp = p.parse(formula.replaceAll('×', '*').replaceAll('÷', '/'));
       ContextModel cm = ContextModel();
+      Variable xVar = Variable('x');
 
-      for (double x = -10; x <= 10; x += 0.2) {
-        cm.bindVariable(Variable('x'), Number(x));
-        double y = exp.evaluate(EvaluationType.REAL, cm);
+      for (double x = -10; x <= 10; x += 0.5) {
+        cm.bindVariable(xVar, Number(x));
+        double y = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
         if (!y.isNaN && !y.isInfinite && y.abs() < 100) {
           newSpots.add(FlSpot(x, y));
         }
