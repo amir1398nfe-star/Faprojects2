@@ -157,7 +157,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
           return pw.Directionality(
             textDirection: pw.TextDirection.rtl,
             child: pw.Column(
-              crossAxisAlignment: pw.CrossAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Container(
                   padding: const pw.EdgeInsets.all(12),
@@ -216,7 +216,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAlignment: CrossAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -312,7 +312,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
             alignment: Alignment.bottomRight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
