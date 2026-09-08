@@ -22,11 +22,32 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Preserve main.dart & Create Android Structure
+      - name: Setup Android Project & Force Pubspec
         run: |
-          cp lib/main.dart lib/main.dart.bak || true
           flutter create . --platforms=android --overwrite
-          cp lib/main.dart.bak lib/main.dart || true
+          cat << 'EOF' > pubspec.yaml
+          name: scientific_calculator
+          description: "Scientific Calculator"
+          publish_to: 'none'
+          version: 1.0.0+1
+
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+
+          dependencies:
+            flutter:
+              sdk: flutter
+            math_expressions: ^2.5.0
+            shared_preferences: ^2.2.2
+
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^3.0.0
+
+          flutter:
+            uses-material-design: true
+          EOF
 
       - name: Install dependencies
         run: flutter pub get
@@ -34,7 +55,8 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
