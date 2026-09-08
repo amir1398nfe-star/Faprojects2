@@ -22,7 +22,15 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Fetch Dependencies
+      - name: Rebuild Android Directory Safely
+        run: |
+          cp lib/main.dart lib/main.dart.bak || true
+          cp pubspec.yaml pubspec.yaml.bak || true
+          flutter create . --platforms=android --overwrite
+          cp lib/main.dart.bak lib/main.dart || true
+          cp pubspec.yaml.bak pubspec.yaml || true
+
+      - name: Get Dependencies
         run: flutter pub get
 
       - name: Build APK
