@@ -120,7 +120,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
             alignment: Alignment.bottomRight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
