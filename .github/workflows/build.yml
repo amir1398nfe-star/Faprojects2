@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build CafeBazaar Release APK
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -22,22 +22,44 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Rebuild Android Directory Safely
+      - name: Rebuild Android Directory with Unique Package
         run: |
           cp lib/main.dart lib/main.dart.bak || true
           cp pubspec.yaml pubspec.yaml.bak || true
-          flutter create . --platforms=android --overwrite
+          flutter create --org com.amir . --platforms=android --overwrite
           cp lib/main.dart.bak lib/main.dart || true
           cp pubspec.yaml.bak pubspec.yaml || true
+
+      - name: Generate Keystore & Configure Signing
+        run: |
+          keytool -genkey -v -keystore android/app/key.jks \
+            -storepass 12345678 -keypass 12345678 \
+            -alias key0 -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Amir, OU=Dev, O=App, L=Tehran, S=Tehran, C=IR"
+
+          cat <<EOF > android/key.properties
+          storePassword=12345678
+          keyPassword=12345678
+          keyAlias=key0
+          storeFile=key.jks
+          EOF
+
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' android/app/build.gradle
 
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build Signed APK for Cafe Bazaar
         run: flutter build apk --release
 
-      - name: Upload Artifact
+      - name: Upload Cafe Bazaar APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: bazaar-app-release
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Backup Keystore File
+        uses: actions/upload-artifact@v4
+        with:
+          name: key-jks-backup
+          path: android/app/key.jks
