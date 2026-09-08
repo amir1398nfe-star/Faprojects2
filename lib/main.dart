@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:math_expressions/math_expressions.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(const ScientificCalculatorApp());
@@ -142,65 +137,6 @@ class _CalculatorTabState extends State<CalculatorTab> {
     }
   }
 
-  Future<void> _exportPdf() async {
-    if (_history.isEmpty) return;
-    try {
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.blueGrey800,
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'Calculator History Report',
-                        style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold),
-                      ),
-                      pw.Text(
-                        DateTime.now().toString().split(' ')[0],
-                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Table.fromTextArray(
-                  border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                  headers: ['No', 'Calculation & Result'],
-                  data: List.generate(
-                    _history.length,
-                    (index) => ['${index + 1}', _history[index]],
-                  ),
-                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
-                  cellAlignment: pw.Alignment.centerLeft,
-                  cellPadding: const pw.EdgeInsets.all(8),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      await Printing.sharePdf(
-        bytes: await pdf.save(),
-        filename: 'calculator_history.pdf',
-      );
-    } catch (_) {}
-  }
-
   void _showHistoryModal() {
     showModalBottomSheet(
       context: context,
@@ -212,40 +148,22 @@ class _CalculatorTabState extends State<CalculatorTab> {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('تاریخچه محاسبات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
-                        tooltip: 'خروجی PDF',
-                        onPressed: _exportPdf,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.share, color: Color(0xFF00E676)),
-                        tooltip: 'اشتراک‌گذاری متنی',
-                        onPressed: () {
-                          if (_history.isNotEmpty) {
-                            Share.share('📊 تاریخچه محاسبات:\n\n${_history.join('\n')}');
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                        tooltip: 'پاک کردن',
-                        onPressed: () async {
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.remove('calc_history');
-                          setState(() => _history.clear());
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  )
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                    tooltip: 'پاک کردن',
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.remove('calc_history');
+                      setState(() => _history.clear());
+                      Navigator.pop(context);
+                    },
+                  ),
                 ],
               ),
               const Divider(color: Colors.white24),
@@ -257,7 +175,6 @@ class _CalculatorTabState extends State<CalculatorTab> {
                         itemBuilder: (context, index) {
                           return ListTile(
                             title: Text(_history[index], style: const TextStyle(fontSize: 16)),
-                            trailing: const Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.white30),
                             onTap: () {
                               final parts = _history[index].split(' = ');
                               if (parts.isNotEmpty) {
@@ -381,36 +298,7 @@ class GraphTab extends StatefulWidget {
 
 class _GraphTabState extends State<GraphTab> {
   final TextEditingController _controller = TextEditingController(text: 'x^2');
-  List<FlSpot> _spots = [];
-
-  void _plotGraph() {
-    final formula = _controller.text;
-    List<FlSpot> newSpots = [];
-    try {
-      Parser p = Parser();
-      Expression exp = p.parse(formula.replaceAll('×', '*').replaceAll('÷', '/'));
-      ContextModel cm = ContextModel();
-      Variable xVar = Variable('x');
-
-      for (double x = -10; x <= 10; x += 0.5) {
-        cm.bindVariable(xVar, Number(x));
-        double y = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
-        if (!y.isNaN && !y.isInfinite && y.abs() < 100) {
-          newSpots.add(FlSpot(x, y));
-        }
-      }
-    } catch (_) {}
-
-    setState(() {
-      _spots = newSpots;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _plotGraph();
-  }
+  String _currentFormula = 'x^2';
 
   @override
   Widget build(BuildContext context) {
@@ -428,36 +316,109 @@ class _GraphTabState extends State<GraphTab> {
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.play_arrow, color: Color(0xFF00E676)),
-                onPressed: _plotGraph,
+                onPressed: () {
+                  setState(() {
+                    _currentFormula = _controller.text;
+                  });
+                },
               ),
             ),
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: _spots.isEmpty
-                ? const Center(child: Text('فرمول وارد شده معتبر نیست.'))
-                : LineChart(
-                    LineChartData(
-                      gridData: const FlGridData(show: true),
-                      titlesData: const FlTitlesData(
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      borderData: FlBorderData(show: true, border: Border.all(color: Colors.white24)),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: _spots,
-                          isCurved: true,
-                          color: const Color(0xFF00E676),
-                          barWidth: 3,
-                          dotData: const FlDotData(show: false),
-                        ),
-                      ],
-                    ),
-                  ),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1F26),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: CustomPaint(
+                painter: GraphPainter(_currentFormula),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class GraphPainter extends CustomPainter {
+  final String formula;
+  GraphPainter(this.formula);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintGrid = Paint()
+      ..color = Colors.white10
+      ..strokeWidth = 1;
+
+    final paintAxes = Paint()
+      ..color = Colors.white54
+      ..strokeWidth = 2;
+
+    final paintLine = Paint()
+      ..color = const Color(0xFF00E676)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final scale = size.width / 20;
+
+    for (double x = -10; x <= 10; x += 2) {
+      double dx = center.dx + x * scale;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paintGrid);
+    }
+    for (double y = -10; y <= 10; y += 2) {
+      double dy = center.dy - y * scale;
+      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), paintGrid);
+    }
+
+    canvas.drawLine(Offset(0, center.dy), Offset(size.width, center.dy), paintAxes);
+    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), paintAxes);
+
+    if (formula.isEmpty) return;
+
+    try {
+      Parser p = Parser();
+      Expression exp = p.parse(formula.replaceAll('×', '*').replaceAll('÷', '/'));
+      ContextModel cm = ContextModel();
+      Variable xVar = Variable('x');
+
+      Path path = Path();
+      bool first = true;
+
+      for (double pixelX = 0; pixelX <= size.width; pixelX += 2) {
+        double xVal = (pixelX - center.dx) / scale;
+        cm.bindVariable(xVar, Number(xVal));
+        try {
+          double yVal = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
+          if (yVal.isNaN || yVal.isInfinite) {
+            first = true;
+            continue;
+          }
+          double pixelY = center.dy - (yVal * scale);
+          if (pixelY < -size.height || pixelY > size.height * 2) {
+            first = true;
+            continue;
+          }
+
+          if (first) {
+            path.moveTo(pixelX, pixelY);
+            first = false;
+          } else {
+            path.lineTo(pixelX, pixelY);
+          }
+        } catch (_) {
+          first = true;
+        }
+      }
+
+      canvas.drawPath(path, paintLine);
+    } catch (_) {}
+  }
+
+  @override
+  bool shouldRepaint(covariant GraphPainter oldDelegate) => oldDelegate.formula != formula;
 }
