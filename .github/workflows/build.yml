@@ -22,34 +22,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Android Project & Force Pubspec
-        run: |
-          flutter create . --platforms=android --overwrite
-          cat << 'EOF' > pubspec.yaml
-          name: scientific_calculator
-          description: "Scientific Calculator"
-          publish_to: 'none'
-          version: 1.0.0+1
-
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-
-          dependencies:
-            flutter:
-              sdk: flutter
-            math_expressions: ^2.5.0
-            shared_preferences: ^2.2.2
-
-          dev_dependencies:
-            flutter_test:
-              sdk: flutter
-            flutter_lints: ^3.0.0
-
-          flutter:
-            uses-material-design: true
-          EOF
-
-      - name: Install dependencies
+      - name: Fetch Dependencies
         run: flutter pub get
 
       - name: Build APK
