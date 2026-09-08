@@ -22,7 +22,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Rebuild Android Directory with Unique Package
+      - name: Rebuild Android Directory
         run: |
           cp lib/main.dart lib/main.dart.bak || true
           cp pubspec.yaml pubspec.yaml.bak || true
@@ -30,21 +30,14 @@ jobs:
           cp lib/main.dart.bak lib/main.dart || true
           cp pubspec.yaml.bak pubspec.yaml || true
 
-      - name: Generate Keystore & Configure Signing
+      - name: Generate Custom Keystore
         run: |
-          keytool -genkey -v -keystore android/app/key.jks \
-            -storepass 12345678 -keypass 12345678 \
-            -alias key0 -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Amir, OU=Dev, O=App, L=Tehran, S=Tehran, C=IR"
-
-          cat <<EOF > android/key.properties
-          storePassword=12345678
-          keyPassword=12345678
-          keyAlias=key0
-          storeFile=key.jks
-          EOF
-
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' android/app/build.gradle
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore \
+            -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Amir, OU=Dev, O=App, L=Tehran, ST=Tehran, C=IR"
+          cp ~/.android/debug.keystore android/app/key.jks
 
       - name: Get Dependencies
         run: flutter pub get
