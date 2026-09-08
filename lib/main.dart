@@ -1,6 +1,5 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:math_expressions/math_expressions.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const ScientificCalculatorApp());
@@ -12,7 +11,7 @@ class ScientificCalculatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ماشین حساب مهندسی پیشرفته',
+      title: 'ماشین حساب مهندسی',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF101216),
@@ -38,7 +37,6 @@ class MainTabScreen extends StatelessWidget {
           title: const Text('ماشین حساب مهندسی'),
           centerTitle: true,
           backgroundColor: const Color(0xFF1C1F26),
-          elevation: 2,
           bottom: const TabBar(
             indicatorColor: Color(0xFF00E676),
             labelColor: Color(0xFF00E676),
@@ -70,27 +68,6 @@ class CalculatorTab extends StatefulWidget {
 class _CalculatorTabState extends State<CalculatorTab> {
   String _expression = '';
   String _result = '0';
-  List<String> _history = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-  }
-
-  Future<void> _loadHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _history = prefs.getStringList('calc_history') ?? [];
-    });
-  }
-
-  Future<void> _saveToHistory(String record) async {
-    final prefs = await SharedPreferences.getInstance();
-    _history.insert(0, record);
-    await prefs.setStringList('calc_history', _history);
-    setState(() {});
-  }
 
   void _onButtonPressed(String btnText) {
     setState(() {
@@ -112,112 +89,30 @@ class _CalculatorTabState extends State<CalculatorTab> {
   void _calculateResult() {
     if (_expression.isEmpty) return;
     try {
-      String parsed = _expression
-          .replaceAll('×', '*')
-          .replaceAll('÷', '/')
-          .replaceAll('π', '3.141592653589793')
-          .replaceAll('e', '2.718281828459045')
-          .replaceAll('√', 'sqrt');
-
-      Parser p = Parser();
-      Expression exp = p.parse(parsed);
-      ContextModel cm = ContextModel();
-      double eval = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
-
-      String formattedResult = eval.toStringAsFixed(eval.truncateToDouble() == eval ? 0 : 4);
+      double eval = MathEvaluator.eval(_expression);
       setState(() {
-        _result = formattedResult;
+        _result = eval.toStringAsFixed(eval.truncateToDouble() == eval ? 0 : 4);
       });
-
-      _saveToHistory('$_expression = $formattedResult');
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _result = 'خطا در محاسبه';
       });
     }
   }
 
-  void _showHistoryModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1C1F26),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('تاریخچه محاسبات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                    tooltip: 'پاک کردن',
-                    onPressed: () async {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove('calc_history');
-                      setState(() => _history.clear());
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white24),
-              Expanded(
-                child: _history.isEmpty
-                    ? const Center(child: Text('تاریخچه‌ای وجود ندارد.'))
-                    : ListView.builder(
-                        itemCount: _history.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Text(_history[index], style: const TextStyle(fontSize: 16)),
-                            onTap: () {
-                              final parts = _history[index].split(' = ');
-                              if (parts.isNotEmpty) {
-                                setState(() {
-                                  _expression = parts[0];
-                                });
-                              }
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-              )
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final buttons = [
-      ['AC', 'DEL', '(', ')', '÷'],
-      ['sin', 'cos', 'tan', '^', '×'],
-      ['7', '8', '9', '√', '-'],
+      ['AC', 'DEL', '(', ')', '/'],
+      ['sin', 'cos', 'tan', '^', '*'],
+      ['7', '8', '9', 'sqrt', '-'],
       ['4', '5', '6', 'log', '+'],
       ['1', '2', '3', 'ln', '='],
-      ['0', '.', 'π', 'e', '%'],
+      ['0', '.', 'pi', 'e', '%'],
     ];
 
     return Column(
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8, top: 4),
-            child: IconButton(
-              icon: const Icon(Icons.history, color: Color(0xFF00E676)),
-              onPressed: _showHistoryModal,
-            ),
-          ),
-        ),
         Expanded(
           flex: 2,
           child: Container(
@@ -225,7 +120,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
             alignment: Alignment.bottomRight,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAlignment.end,
               children: [
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -256,7 +151,7 @@ class _CalculatorTabState extends State<CalculatorTab> {
                                 ? const Color(0xFF00E676)
                                 : ['AC', 'DEL'].contains(btn)
                                     ? const Color(0xFFFF5252)
-                                    : ['÷', '×', '-', '+'].contains(btn)
+                                    : ['/', '*', '-', '+'].contains(btn)
                                         ? const Color(0xFF29B6F6)
                                         : const Color(0xFF1C1F26),
                             borderRadius: BorderRadius.circular(12),
@@ -297,8 +192,8 @@ class GraphTab extends StatefulWidget {
 }
 
 class _GraphTabState extends State<GraphTab> {
-  final TextEditingController _controller = TextEditingController(text: 'x^2');
-  String _currentFormula = 'x^2';
+  final TextEditingController _controller = TextEditingController(text: 'x * x');
+  String _currentFormula = 'x * x';
 
   @override
   Widget build(BuildContext context) {
@@ -309,8 +204,8 @@ class _GraphTabState extends State<GraphTab> {
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'فرمول تابع f(x)',
-              hintText: 'مثال: x^2 یا sin(x)',
+              labelText: 'فرمول f(x)',
+              hintText: 'مثال: x * x یا sin(x)',
               filled: true,
               fillColor: const Color(0xFF1C1F26),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -334,7 +229,7 @@ class _GraphTabState extends State<GraphTab> {
                 border: Border.all(color: Colors.white10),
               ),
               child: CustomPaint(
-                painter: GraphPainter(_currentFormula),
+                painter: SimpleGraphPainter(_currentFormula),
               ),
             ),
           ),
@@ -344,20 +239,14 @@ class _GraphTabState extends State<GraphTab> {
   }
 }
 
-class GraphPainter extends CustomPainter {
+class SimpleGraphPainter extends CustomPainter {
   final String formula;
-  GraphPainter(this.formula);
+  SimpleGraphPainter(this.formula);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paintGrid = Paint()
-      ..color = Colors.white10
-      ..strokeWidth = 1;
-
-    final paintAxes = Paint()
-      ..color = Colors.white54
-      ..strokeWidth = 2;
-
+    final paintGrid = Paint()..color = Colors.white10..strokeWidth = 1;
+    final paintAxes = Paint()..color = Colors.white54..strokeWidth = 2;
     final paintLine = Paint()
       ..color = const Color(0xFF00E676)
       ..strokeWidth = 2.5
@@ -380,45 +269,128 @@ class GraphPainter extends CustomPainter {
 
     if (formula.isEmpty) return;
 
-    try {
-      Parser p = Parser();
-      Expression exp = p.parse(formula.replaceAll('×', '*').replaceAll('÷', '/'));
-      ContextModel cm = ContextModel();
-      Variable xVar = Variable('x');
+    Path path = Path();
+    bool first = true;
 
-      Path path = Path();
-      bool first = true;
-
-      for (double pixelX = 0; pixelX <= size.width; pixelX += 2) {
-        double xVal = (pixelX - center.dx) / scale;
-        cm.bindVariable(xVar, Number(xVal));
-        try {
-          double yVal = (exp.evaluate(EvaluationType.REAL, cm) as num).toDouble();
-          if (yVal.isNaN || yVal.isInfinite) {
-            first = true;
-            continue;
-          }
-          double pixelY = center.dy - (yVal * scale);
-          if (pixelY < -size.height || pixelY > size.height * 2) {
-            first = true;
-            continue;
-          }
-
-          if (first) {
-            path.moveTo(pixelX, pixelY);
-            first = false;
-          } else {
-            path.lineTo(pixelX, pixelY);
-          }
-        } catch (_) {
+    for (double pixelX = 0; pixelX <= size.width; pixelX += 2) {
+      double xVal = (pixelX - center.dx) / scale;
+      try {
+        double yVal = MathEvaluator.evalWithX(formula, xVal);
+        if (yVal.isNaN || yVal.isInfinite) {
           first = true;
+          continue;
         }
-      }
+        double pixelY = center.dy - (yVal * scale);
+        if (pixelY < -size.height || pixelY > size.height * 2) {
+          first = true;
+          continue;
+        }
 
-      canvas.drawPath(path, paintLine);
-    } catch (_) {}
+        if (first) {
+          path.moveTo(pixelX, pixelY);
+          first = false;
+        } else {
+          path.lineTo(pixelX, pixelY);
+        }
+      } catch (_) {
+        first = true;
+      }
+    }
+
+    canvas.drawPath(path, paintLine);
   }
 
   @override
-  bool shouldRepaint(covariant GraphPainter oldDelegate) => oldDelegate.formula != formula;
+  bool shouldRepaint(covariant SimpleGraphPainter oldDelegate) => oldDelegate.formula != formula;
+}
+
+class MathEvaluator {
+  static double evalWithX(String expr, double xVal) {
+    String substituted = expr.replaceAll('x', '($xVal)');
+    return eval(substituted);
+  }
+
+  static double eval(String expression) {
+    String clean = expression
+        .replaceAll('pi', '${math.pi}')
+        .replaceAll('e', '${math.e}')
+        .replaceAll(' ', '');
+    return _parseAddSub(clean);
+  }
+
+  static double _parseAddSub(String str) {
+    if (str.isEmpty) return 0.0;
+    int depth = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (str[i] == ')') depth++;
+      if (str[i] == '(') depth--;
+      if (depth == 0) {
+        if (str[i] == '+' && i > 0 && !_isOp(str[i - 1])) {
+          return _parseAddSub(str.substring(0, i)) + _parseMulDiv(str.substring(i + 1));
+        }
+        if (str[i] == '-' && i > 0 && !_isOp(str[i - 1])) {
+          return _parseAddSub(str.substring(0, i)) - _parseMulDiv(str.substring(i + 1));
+        }
+      }
+    }
+    return _parseMulDiv(str);
+  }
+
+  static double _parseMulDiv(String str) {
+    int depth = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (str[i] == ')') depth++;
+      if (str[i] == '(') depth--;
+      if (depth == 0) {
+        if (str[i] == '*') {
+          return _parseMulDiv(str.substring(0, i)) * _parsePow(str.substring(i + 1));
+        }
+        if (str[i] == '/') {
+          return _parseMulDiv(str.substring(0, i)) / _parsePow(str.substring(i + 1));
+        }
+      }
+    }
+    return _parsePow(str);
+  }
+
+  static double _parsePow(String str) {
+    int depth = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (str[i] == ')') depth++;
+      if (str[i] == '(') depth--;
+      if (depth == 0 && str[i] == '^') {
+        return math.pow(_parsePow(str.substring(0, i)), _parseUnary(str.substring(i + 1))).toDouble();
+      }
+    }
+    return _parseUnary(str);
+  }
+
+  static double _parseUnary(String str) {
+    if (str.startsWith('-')) return -_parseUnary(str.substring(1));
+    if (str.startsWith('+')) return _parseUnary(str.substring(1));
+    if (str.startsWith('sin(') && str.endsWith(')')) {
+      return math.sin(_parseAddSub(str.substring(4, str.length - 1)));
+    }
+    if (str.startsWith('cos(') && str.endsWith(')')) {
+      return math.cos(_parseAddSub(str.substring(4, str.length - 1)));
+    }
+    if (str.startsWith('tan(') && str.endsWith(')')) {
+      return math.tan(_parseAddSub(str.substring(4, str.length - 1)));
+    }
+    if (str.startsWith('sqrt(') && str.endsWith(')')) {
+      return math.sqrt(_parseAddSub(str.substring(5, str.length - 1)));
+    }
+    if (str.startsWith('ln(') && str.endsWith(')')) {
+      return math.log(_parseAddSub(str.substring(3, str.length - 1)));
+    }
+    if (str.startsWith('log(') && str.endsWith(')')) {
+      return math.log(_parseAddSub(str.substring(4, str.length - 1))) / math.ln10;
+    }
+    if (str.startsWith('(') && str.endsWith(')')) {
+      return _parseAddSub(str.substring(1, str.length - 1));
+    }
+    return double.parse(str);
+  }
+
+  static bool _isOp(String ch) => ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^';
 }
