@@ -80,6 +80,8 @@ class _CalculatorTabState extends State<CalculatorTab> {
         }
       } else if (btnText == '=') {
         _calculateResult();
+      } else if (['sin', 'cos', 'tan', 'sqrt', 'log', 'ln'].contains(btnText)) {
+        _expression += '$btnText(';
       } else {
         _expression += btnText;
       }
@@ -315,8 +317,21 @@ class MathEvaluator {
         .replaceAll('pi', '${math.pi}')
         .replaceAll('e', '${math.e}')
         .replaceAll(' ', '');
+
+    int openCount = 0;
+    for (int i = 0; i < clean.length; i++) {
+      if (clean[i] == '(') openCount++;
+      if (clean[i] == ')') openCount--;
+    }
+    while (openCount > 0) {
+      clean += ')';
+      openCount--;
+    }
+
     return _parseAddSub(clean);
   }
+
+  static double _degToRad(double deg) => deg * math.pi / 180.0;
 
   static double _parseAddSub(String str) {
     if (str.isEmpty) return 0.0;
@@ -369,13 +384,13 @@ class MathEvaluator {
     if (str.startsWith('-')) return -_parseUnary(str.substring(1));
     if (str.startsWith('+')) return _parseUnary(str.substring(1));
     if (str.startsWith('sin(') && str.endsWith(')')) {
-      return math.sin(_parseAddSub(str.substring(4, str.length - 1)));
+      return math.sin(_degToRad(_parseAddSub(str.substring(4, str.length - 1))));
     }
     if (str.startsWith('cos(') && str.endsWith(')')) {
-      return math.cos(_parseAddSub(str.substring(4, str.length - 1)));
+      return math.cos(_degToRad(_parseAddSub(str.substring(4, str.length - 1))));
     }
     if (str.startsWith('tan(') && str.endsWith(')')) {
-      return math.tan(_parseAddSub(str.substring(4, str.length - 1)));
+      return math.tan(_degToRad(_parseAddSub(str.substring(4, str.length - 1))));
     }
     if (str.startsWith('sqrt(') && str.endsWith(')')) {
       return math.sqrt(_parseAddSub(str.substring(5, str.length - 1)));
